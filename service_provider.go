@@ -1185,7 +1185,16 @@ func (sp *ServiceProvider) validateAssertion(assertion *Assertion, possibleReque
 	if assertion.Issuer.Value != sp.IDPMetadata.EntityID {
 		return fmt.Errorf("issuer is not %q", sp.IDPMetadata.EntityID)
 	}
+	// Subject, SubjectConfirmationData and Conditions are optional pointers in
+	// the schema but required by the checks below. Reject a signed assertion
+	// that omits them instead of dereferencing nil (GO-2026-6909).
+	if assertion.Subject == nil {
+		return fmt.Errorf("assertion Subject is missing")
+	}
 	for _, subjectConfirmation := range assertion.Subject.SubjectConfirmations {
+		if subjectConfirmation.SubjectConfirmationData == nil {
+			return fmt.Errorf("assertion SubjectConfirmationData is missing")
+		}
 		requestIDvalid := false
 
 		// We *DO NOT* validate InResponseTo when AllowIDPInitiated is set. Here's why:
@@ -1222,6 +1231,9 @@ func (sp *ServiceProvider) validateAssertion(assertion *Assertion, possibleReque
 		if subjectConfirmation.SubjectConfirmationData.NotOnOrAfter.Add(MaxClockSkew).Before(now) {
 			return fmt.Errorf("assertion SubjectConfirmationData is expired")
 		}
+	}
+	if assertion.Conditions == nil {
+		return fmt.Errorf("assertion Conditions is missing")
 	}
 	if assertion.Conditions.NotBefore.Add(-MaxClockSkew).After(now) {
 		return fmt.Errorf("assertion Conditions is not yet valid")

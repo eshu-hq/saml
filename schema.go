@@ -796,7 +796,9 @@ func (a *Assertion) UnmarshalXML(d *xml.Decoder, start xml.StartElement) error {
 type Subject struct {
 	XMLName xml.Name `xml:"urn:oasis:names:tc:SAML:2.0:assertion Subject"`
 	// BaseID               *BaseID  ... TODO
-	NameID *NameID
+	// NameID is bound to the assertion namespace so a NameID element from a
+	// foreign namespace cannot populate it (GO-2026-6909).
+	NameID *NameID `xml:"urn:oasis:names:tc:SAML:2.0:assertion NameID"`
 	// EncryptedID          *EncryptedID  ... TODO
 	SubjectConfirmations []SubjectConfirmation `xml:"SubjectConfirmation"`
 }
@@ -868,7 +870,7 @@ func (s *SessionIndex) Element() *etree.Element {
 type SubjectConfirmation struct {
 	Method string `xml:",attr"`
 	// BaseID               *BaseID  ... TODO
-	NameID *NameID
+	NameID *NameID `xml:"urn:oasis:names:tc:SAML:2.0:assertion NameID"`
 	// EncryptedID          *EncryptedID  ... TODO
 	SubjectConfirmationData *SubjectConfirmationData
 }
@@ -1232,9 +1234,9 @@ func (a *Attribute) Element() *etree.Element {
 //
 // See http://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf §2.7.3.1.1
 type AttributeValue struct {
-	Type   string `xml:"http://www.w3.org/2001/XMLSchema-instance type,attr"`
-	Value  string `xml:",chardata"`
-	NameID *NameID
+	Type   string  `xml:"http://www.w3.org/2001/XMLSchema-instance type,attr"`
+	Value  string  `xml:",chardata"`
+	NameID *NameID `xml:"urn:oasis:names:tc:SAML:2.0:assertion NameID"`
 }
 
 // Element returns an etree.Element representing the object in XML form.
